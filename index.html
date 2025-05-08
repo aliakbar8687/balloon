@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balloon Pop Game - Daughter Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(to bottom, #ffafbd, #ffc3a0);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: #333;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 80vh;
+            max-width: 800px;
+            margin: 0 auto;
+            overflow: hidden;
+            bottom: 0;
+        }
+        
+        .score-panel {
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 15px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .score {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .time {
+            font-size: 1.2rem;
+            margin-top: 5px;
+        }
+        
+        .level {
+            font-size: 1.2rem; 
+            margin-top: 5px;
+        }
+        
+        .balloon {
+            position: absolute;
+            cursor: pointer;
+            transform-origin: bottom center;
+            animation: float 8s linear forwards, sway 2s ease-in-out infinite alternate;
+        }
+        
+        .balloon svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .btn {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+            background-color: #ff5252;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #ff6b6b;
+        }
+        
+        .pop-animation {
+            animation: pop 0.3s ease-out;
+        }
+        
+        @keyframes float {
+            0% {
+                bottom: -100px;
+            }
+            100% {
+                bottom: 100%;
+            }
+        }
+        
+        @keyframes sway {
+            0% {
+                transform: translateX(-5px) rotate(-2deg);
+            }
+            100% {
+                transform: translateX(5px) rotate(2deg);
+            }
+        }
+        
+        @keyframes pop {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+        
+        /* Confetti animation */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        /* Score animation */
+        .score-pop {
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            animation: score-animation 1s ease-out forwards;
+            pointer-events: none;
+            z-index: 15;
+        }
+        
+        @keyframes score-animation {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+        }
+        
+        /* Level up animation */
+        .level-up {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .score-panel {
+                padding: 8px 15px;
+                margin-bottom: 10px;
+            }
+            
+            .score {
+                font-size: 1.2rem;
+            }
+            
+            .time, .level {
+                font-size: 1rem;
+            }
+            
+            .btn {
+                padding: 8px 16px;
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .score-panel {
+                padding: 6px 12px;
+            }
+            
+            .score {
+                font-size: 1.1rem;
+            }
+            
+            .time, .level {
+                font-size: 0.9rem;
+            }
+            
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="score-panel">
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="time">Time: <span id="time">60</span>s</div>
+        <div class="level">Level: <span id="level">1</span></div>
+    </div>
+    
+    <div class="game-container" id="game-container"></div>
+    
+    <button class="btn" id="start-btn">Start Game</button>
+    
+    <div class="modal" id="start-modal">
+        <div class="modal-content">
+            <h2>Balloon Pop Game</h2>
+            <p>Pop as many balloons as you can in 60 seconds!</p>
+            <p>Each level gets faster and more challenging!</p>
+            <button class="btn" id="modal-start-btn">Let's Play!</button>
+        </div>
+    </div>
+    
+    <div class="modal" id="end-modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Game Over!</h2>
+            <p>Your final score: <span id="final-score">0</span></p>
+            <p>You reached level: <span id="final-level">1</span></p>
+            <button class="btn" id="play-again-btn">Play Again</button>
+        </div>
+    </div>
+    
+    <script>
+        // Game variables
+        let score = 0;
+        let timeLeft = 60;
+        let level = 1;
+        let gameInterval;
+        let timeInterval;
+        let isPlaying = false;
+        let balloonSpeed = 8; // Initial speed in seconds
+        let balloonFrequency = 1500; // Time between balloon creation in ms
+        let confettiTimeout;
+        let highScore = localStorage.getItem('balloonPopHighScore') || 0;
+        
+        // DOM elements
+        const gameContainer = document.getElementById('game-container');
+        const scoreElement = document.getElementById('score');
+        const timeElement = document.getElementById('time');
+        const levelElement = document.getElementById('level');
+        const startBtn = document.getElementById('start-btn');
+        const startModal = document.getElementById('start-modal');
+        const modalStartBtn = document.getElementById('modal-start-btn');
+        const endModal = document.getElementById('end-modal');
+        const finalScoreElement = document.getElementById('final-score');
+        const finalLevelElement = document.getElementById('final-level');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        
+        // Colors for balloons
+        const balloonColors = [
+            '#FF5252', '#FF4081', '#E040FB', '#7C4DFF', 
+            '#536DFE', '#448AFF', '#40C4FF', '#18FFFF', 
+            '#64FFDA', '#69F0AE', '#B2FF59', '#EEFF41', 
+            '#FFFF00', '#FFD740', '#FFAB40', '#FF6E40'
+        ];
+        
+        // Create a balloon element
+        function createBalloon() {
+            if (!isPlaying) return;
+            
+            const balloon = document.createElement('div');
+            balloon.className = 'balloon';
+            
+            // Random size (smaller balloons worth more points)
+            const size = Math.floor(Math.random() * 60) + 40; // 40px to 100px
+            
+            // Random position
+            const posX = Math.floor(Math.random() * (gameContainer.clientWidth - size));
+            
+            // Set balloon styles
+            balloon.style.width = `${size}px`;
+            balloon.style.height = `${size * 1.2}px`;
+            balloon.style.left = `${posX}px`;
+            
+            // Set animation speed based on level
+            const speed = balloonSpeed - (level * 0.5); // Gets faster with higher levels
+            balloon.style.animationDuration = `${Math.max(2, speed)}s, 2s`; // Min 2 seconds
+            
+            // Random color
+            const colorIndex = Math.floor(Math.random() * balloonColors.length);
+            const balloonColor = balloonColors[colorIndex];
+            
+            // Create SVG balloon
+            const svgString = `
+                <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50,0 C22.4,0 0,22.4 0,50 C0,77.6 22.4,100 50,100 C77.6,100 100,77.6 100,50 C100,22.4 77.6,0 50,0 Z" fill="${balloonColor}" />
+                    <path d="M50,100 L45,120 L55,120 L50,100 Z" fill="${balloonColor}" />
+                    <path d="M50,95 C35,95 22,82 22,67 C22,52 35,39 50,39 C65,39 78,52 78,67 C78,82 65,95 50,95 Z" fill="rgba(255,255,255,0.2)" />
+                </svg>
+            `;
+            
+            balloon.innerHTML = svgString;
+            
+            // Set data attributes
+            balloon.dataset.size = size;
+            balloon.dataset.points = Math.round(100 - size * 0.7); // Smaller balloons worth more
+            
+            // Add to game container
+            gameContainer.appendChild(balloon);
+            
+            // Add event listener for popping
+            balloon.addEventListener('click', popBalloon);
+            
+            // Remove balloon when it reaches the top
+            setTimeout(() => {
+                if (balloon.parentNode === gameContainer) {
+                    gameContainer.removeChild(balloon);
+                }
+            }, speed * 1000);
+        }
+        
+        // Pop a balloon
+        function popBalloon(e) {
+            e.stopPropagation();
+            
+            const balloon = this;
+            const points = parseInt(balloon.dataset.points);
+            const balloonRect = balloon.getBoundingClientRect();
+            const centerX = balloonRect.left + balloonRect.width / 2;
+            const centerY = balloonRect.top + balloonRect.height / 2;
+            
+            // Add the score
+            score += points;
+            scoreElement.textContent = score;
+            
+            // Check for level up (every 200 points)
+            if (score >= level * 200 && level < 10) {
+                levelUp();
+            }
+            
+            // Show score popup
+            showScorePopup(points, centerX, centerY);
+            
+            // Create confetti effect
+            createConfetti(centerX, centerY);
+            
+            // Add pop animation
+            balloon.classList.add('pop-animation');
+            
+            // Remove balloon after animation
+            setTimeout(() => {
+                if (balloon.parentNode === gameContainer) {
+                    gameContainer.removeChild(balloon);
+                }
+            }, 300);
+        }
+        
+        // Show score popup animation
+        function showScorePopup(points, x, y) {
+            const popup = document.createElement('div');
+            popup.className = 'score-pop';
+            popup.textContent = `+${points}`;
+            popup.style.left = `${x - gameContainer.getBoundingClientRect().left}px`;
+            popup.style.top = `${y - gameContainer.getBoundingClientRect().top}px`;
+            
+            gameContainer.appendChild(popup);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (popup.parentNode === gameContainer) {
+                    gameContainer.removeChild(popup);
+                }
+            }, 1000);
+        }
+        
+        // Create confetti particles
+        function createConfetti(x, y) {
+            for (let i = 0; i < 20; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // Random position around the balloon
+                const offsetX = Math.random() * 40 - 20;
+                const offsetY = Math.random() * 40 - 20;
+                
+                // Random color
+                const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                // Random size
+                const size = Math.random() * 8 + 4;
+                
+                // Random shape (square or rectangle)
+                const isRectangle = Math.random() > 0.5;
+                
+                confetti.style.backgroundColor = color;
+                confetti.style.left = `${x - gameContainer.getBoundingClientRect().left + offsetX}px`;
+                confetti.style.top = `${y - gameContainer.getBoundingClientRect().top + offsetY}px`;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${isRectangle ? size / 2 : size}px`;
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                // Add animation
+                confetti.style.transition = 'all 1s ease-out';
+                
+                gameContainer.appendChild(confetti);
+                
+                // Animate outward
+                setTimeout(() => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * 100 + 50;
+                    
+                    confetti.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) rotate(${Math.random() * 360}deg)`;
+                    confetti.style.opacity = '0';
+                }, 10);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (confetti.parentNode === gameContainer) {
+                        gameContainer.removeChild(confetti);
+                    }
+                }, 1100);
+            }
+        }
+        
+        // Level up function
+        function levelUp() {
+            level++;
+            levelElement.textContent = level;
+            
+            // Increase difficulty
+            balloonSpeed = Math.max(2, 8 - (level * 0.5));
+            balloonFrequency = Math.max(500, 1500 - (level * 100));
+            
+            // Show level up message
+            const levelUpMsg = document.createElement('div');
+            levelUpMsg.className = 'level-up';
+            levelUpMsg.textContent = `Level ${level}!`;
+            gameContainer.appendChild(levelUpMsg);
+            
+            // Animate level up message
+            setTimeout(() => {
+                levelUpMsg.style.opacity = '1';
+                levelUpMsg.style.transform = 'translate(-50%, -50%) scale(1.2)';
+            }, 50);
+            
+            // Remove message after animation
+            setTimeout(() => {
+                levelUpMsg.style.opacity = '0';
+                setTimeout(() => {
+                    if (levelUpMsg.parentNode === gameContainer) {
+                        gameContainer.removeChild(levelUpMsg);
+                    }
+                }, 500);
+            }, 2000);
+            
+            // Clear existing balloons and restart the interval
+            clearInterval(gameInterval);
+            gameInterval = setInterval(createBalloon, balloonFrequency);
+        }
+        
+        // Start game function
+        function startGame() {
+            // Reset game state
+            score = 0;
+            timeLeft = 60;
+            level = 1;
+            balloonSpeed = 8;
+            balloonFrequency = 1500;
+            isPlaying = true;
+            
+            // Clear any existing balloons
+            gameContainer.innerHTML = '';
+            
+            // Hide start modal
+            startModal.style.display = 'none';
+            
+            // Show game elements
+            scoreElement.textContent = score;
+            timeElement.textContent = timeLeft;
+            levelElement.textContent = level;
+            
+            // Hide start button
+            startBtn.style.display = 'none';
+            
+            // Start creating balloons
+            gameInterval = setInterval(createBalloon, balloonFrequency);
+            
+            // Start timer
+            timeInterval = setInterval(() => {
+                timeLeft--;
+                timeElement.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+        
+        // End game function
+        function endGame() {
+            isPlaying = false;
+            
+            // Stop intervals
+            clearInterval(gameInterval);
+            clearInterval(timeInterval);
+            
+            // Show end modal
+            finalScoreElement.textContent = score;
+            finalLevelElement.textContent = level;
+            endModal.style.display = 'flex';
+            
+            // Show start button
+            startBtn.style.display = 'inline-block';
+            
+            // Update high score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('balloonPopHighScore', highScore);
+            }
+        }
+        
+        // Event listeners
+        startBtn.addEventListener('click', () => {
+            startModal.style.display = 'flex';
+        });
+        
+        modalStartBtn.addEventListener('click', startGame);
+        
+        playAgainBtn.addEventListener('click', () => {
+            endModal.style.display = 'none';
+            startGame();
+        });
+        
+        // Initialize game
+        function init() {
+            startModal.style.display = 'flex';
+        }
+        
+        // Start on load
+        window.onload = init;
+    </script>
+</body>
+</html>
